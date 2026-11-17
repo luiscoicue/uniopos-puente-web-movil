@@ -2,9 +2,9 @@
 
 Sistema puente externo y portátil para conectar teléfonos móviles vía Wi-Fi con **uniCenta oPOS 5.0.1** sobre **MariaDB** sin modificar el código fuente del POS. Soporta mapa de mesas en tiempo real, productos auxiliares (`isCom`), notas de cocina/bar y sincronización directa con `sharedtickets`.
 
-- **Descargar Instalador directo (v2.0.0):** https://github.com
-- **Descargar Paquete Portable ZIP (v2.0.0):** https://github.com
-- **Ver Release v2.0.0:** https://github.com
+- **Descargar Instalador directo (v2.0.0):** https://github.com/luiscoicue/uniopos-puente-web-movil/releases/download/v2.0.0/uniOPOS_Installer.bat
+- **Descargar Paquete Portable ZIP (v2.0.0):** https://github.com/luiscoicue/uniopos-puente-web-movil/releases/download/v2.0.0/uniOPOS_PuenteWeb_v2.0_Portable.zip
+- **Ver Release v2.0.0:** https://github.com/luiscoicue/uniopos-puente-web-movil/releases/tag/v2.0.0
 
 ---
 
@@ -13,7 +13,7 @@ Sistema puente externo y portátil para conectar teléfonos móviles vía Wi-Fi 
 Abre **PowerShell como Administrador** en el PC servidor de uniCenta oPOS y ejecuta esta única línea:
 
 ```powershell
-New-Item -ItemType Directory -Force -Path "C:\uniOPOS_PuenteWeb" | Out-Null; curl.exe -L --fail --retry 3 "https://github.com" -o "C:\uniOPOS_PuenteWeb\uniOPOS_Installer.bat"; Start-Process "C:\uniOPOS_PuenteWeb\uniOPOS_Installer.bat" -Verb RunAs
+New-Item -ItemType Directory -Force -Path "C:\uniOPOS_PuenteWeb" | Out-Null; curl.exe -L --fail --retry 3 "https://github.com/luiscoicue/uniopos-puente-web-movil/releases/download/v2.0.0/uniOPOS_Installer.bat" -o "C:\uniOPOS_PuenteWeb\uniOPOS_Installer.bat"; Start-Process "C:\uniOPOS_PuenteWeb\uniOPOS_Installer.bat" -Verb RunAs
 ```
 
 1. En el menú interactivo selecciona **Opción 1 (Instalar / Actualizar)**.
@@ -52,5 +52,5 @@ cd "E:\uniOPOS_APP\Repositorio_uniOPOS_PuenteWeb_v2.0"; git add .; git commit -m
 
 ### 4. Actualizar el asset `uniOPOS_PuenteWeb_v2.0_Portable.zip` en el Release `v2.0.0`
 ```powershell
-gh release upload v2.0.0 "E:\uniOPOS_APP\Repositorio_uniOPOS_PuenteWeb_v2.0\dist\uniOPOS_PuenteWeb_v2.0_Portable.zip" --clobber --repo luiscoicue/uniopos-puente-web-movil
+Subir manualmente los assets desde la interfaz web de GitHub en Releases -> v2.0.0 -> Edit release (https://github.com/luiscoicue/uniopos-puente-web-movil/releases/tag/v2.0.0)
 ```
