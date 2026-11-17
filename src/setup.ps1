@@ -65,10 +65,12 @@ if (Test-Path $propFile) {
 # 3. Copiar paquete completo a C:\uniOPOS_PuenteWeb y escribir config.json
 Write-Host "`n[3/5] Instalando archivos en $destDir..." -ForegroundColor Cyan
 Get-Process node -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "*uniOPOS*" } | Stop-Process -Force -ErrorAction SilentlyContinue
-if ($srcDir.TrimEnd("\") -ne $destDir.TrimEnd("\")) { if (Test-Path $destDir) { Remove-Item $destDir -Recurse -Force } }
-New-Item -ItemType Directory -Force -Path $destDir | Out-Null
 
-Get-ChildItem -Path $srcDir -Exclude "setup.ps1","instalar.bat" | Copy-Item -Destination $destDir -Recurse -Force
+if ($srcDir.TrimEnd("\") -ne $destDir.TrimEnd("\")) {
+    if (Test-Path $destDir) { Remove-Item $destDir -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+    Get-ChildItem -Path $srcDir -Exclude "setup.ps1","instalar.bat" | Copy-Item -Destination $destDir -Recurse -Force
+}
 
 $cfgObj = [ordered]@{
     port            = 5000
@@ -118,4 +120,3 @@ Write-Host "Monitor de Cocina/Bar:" -ForegroundColor White
 Write-Host "   http://${localIP}:5000/comandas.html" -ForegroundColor Yellow
 Write-Host "====================================================`n" -ForegroundColor Green
 Read-Host "Presiona ENTER para finalizar"
-
