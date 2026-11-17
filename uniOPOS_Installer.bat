@@ -1,4 +1,5 @@
 @echo off
+if /I "%~dp0"=="C:\uniOPOS_PuenteWeb\" (copy /Y "%~f0" "%TEMP%\uniOPOS_Installer.bat" >nul & start "" "%TEMP%\uniOPOS_Installer.bat" & exit /b)
 title uniOPOS PuenteWeb v2.0 - Instalador y Gestor Oficial
 color 0B
 set "GH_HOST=https://github.com/luiscoicue/uniopos-puente-web-movil"
@@ -41,7 +42,7 @@ powershell -NoProfile -Command "if ((Get-Item '%TEMP_ZIP%').Length -lt 104857600
 if %errorLevel% neq 0 (echo [ERROR] Archivo menor a 100 MB. & pause & goto MENU)
 echo [3/4] Extrayendo en %INSTALL_DIR%...
 if exist "%INSTALL_DIR%" rmdir /S /Q "%INSTALL_DIR%"
-mkdir "%INSTALL_DIR%"
+mkdir "%INSTALL_DIR%" & copy /Y "%~f0" "%INSTALL_DIR%\uniOPOS_Installer.bat" >nul
 tar.exe -xf "%TEMP_ZIP%" -C "%INSTALL_DIR%"
 for /d %%D in ("%INSTALL_DIR%\*") do if exist "%%D\setup.ps1" robocopy "%%D" "%INSTALL_DIR%" /E /MOVE /NFL /NDL /NJH /NJS >nul
 if not exist "%INSTALL_DIR%\iniciar_puente.vbs" (echo [ERROR] Falta iniciar_puente.vbs. & pause & goto MENU)
