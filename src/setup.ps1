@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 $srcDir  = $PSScriptRoot
 $destDir = "C:\uniOPOS_PuenteWeb"
 $propFile = Join-Path $env:USERPROFILE "unicentaopos.properties"
@@ -65,7 +65,7 @@ if (Test-Path $propFile) {
 # 3. Copiar paquete completo a C:\uniOPOS_PuenteWeb y escribir config.json
 Write-Host "`n[3/5] Instalando archivos en $destDir..." -ForegroundColor Cyan
 Get-Process node -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "*uniOPOS*" } | Stop-Process -Force -ErrorAction SilentlyContinue
-if (Test-Path $destDir) { Remove-Item $destDir -Recurse -Force }
+if ($srcDir.TrimEnd("\") -ne $destDir.TrimEnd("\")) { if (Test-Path $destDir) { Remove-Item $destDir -Recurse -Force } }
 New-Item -ItemType Directory -Force -Path $destDir | Out-Null
 
 Get-ChildItem -Path $srcDir -Exclude "setup.ps1","instalar.bat" | Copy-Item -Destination $destDir -Recurse -Force
