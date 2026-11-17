@@ -33,18 +33,18 @@ Haz clic en el siguiente botón para descargar el instalador oficial:
 
 ### 1. Limpieza completa de instalación previa (PowerShell como Administrador)
 ```powershell
-taskkill /F /IM node.exe /T 2>\$null
+taskkill /F /IM node.exe /T 2>$null
 Remove-NetFirewallRule -DisplayName "*uniOPOS*" -ErrorAction SilentlyContinue
-netsh advfirewall firewall delete rule name="uniOPOS PuenteWeb 5000" 2>\$null
-Remove-Item "\$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\*puente*" -Force -ErrorAction SilentlyContinue
-Remove-Item "\$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\*uniOPOS*" -Force -ErrorAction SilentlyContinue
+netsh advfirewall firewall delete rule name="uniOPOS PuenteWeb 5000" 2>$null
+Remove-Item "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\*puente*" -Force -ErrorAction SilentlyContinue
+Remove-Item "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\*uniOPOS*" -Force -ErrorAction SilentlyContinue
 Remove-Item "C:\uniOPOS_PuenteWeb" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item "C:\uniOPOS" -Recurse -Force -ErrorAction SilentlyContinue
 ```
 
 ### 2. Despliegue directo desde la nube sin navegador (PowerShell como Administrador)
 ```powershell
-irm "https://githubusercontent.com" -OutFile "\(env:TEMP\uniOPOS_Installer.bat"; Start-Process "\)env:TEMP\uniOPOS_Installer.bat" -Verb RunAs
+irm "https://githubusercontent.com" -OutFile "$(env:TEMP\uniOPOS_Installer.bat"; Start-Process "\)env:TEMP\uniOPOS_Installer.bat" -Verb RunAs
 ```
 
 ### 3. Verificación manual de red y procesos en Windows
@@ -77,3 +77,4 @@ till.autoRefreshTimer=5
 * `server.js`: Servidor puente API REST y conexión MariaDB (`3316` / `3306`).
 * `setup.ps1` e `iniciar_puente.vbs`: Configurador de entorno y lanzador silencioso.
 * `uniOPOS_Installer.bat`: Gestor interactivo de instalación, IP, reinicio, diagnóstico y desinstalación.
+
