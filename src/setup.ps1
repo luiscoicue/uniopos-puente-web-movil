@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 $srcDir  = $PSScriptRoot
-$destDir = "C:\uniOPOS\PuenteWeb"
+$destDir = "C:\uniOPOS_PuenteWeb"
 $propFile = Join-Path $env:USERPROFILE "unicentaopos.properties"
 
 Write-Host "====================================================" -ForegroundColor Cyan
@@ -62,7 +62,7 @@ if (Test-Path $propFile) {
     Write-Host "   Aviso: No se encontro unicentaopos.properties en $propFile (se omitio este paso)." -ForegroundColor Yellow
 }
 
-# 3. Copiar paquete completo a C:\uniOPOS\PuenteWeb y escribir config.json
+# 3. Copiar paquete completo a C:\uniOPOS_PuenteWeb y escribir config.json
 Write-Host "`n[3/5] Instalando archivos en $destDir..." -ForegroundColor Cyan
 Get-Process node -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "*uniOPOS*" } | Stop-Process -Force -ErrorAction SilentlyContinue
 if (Test-Path $destDir) { Remove-Item $destDir -Recurse -Force }
@@ -118,3 +118,4 @@ Write-Host "Monitor de Cocina/Bar:" -ForegroundColor White
 Write-Host "   http://${localIP}:5000/comandas.html" -ForegroundColor Yellow
 Write-Host "====================================================`n" -ForegroundColor Green
 Read-Host "Presiona ENTER para finalizar"
+
