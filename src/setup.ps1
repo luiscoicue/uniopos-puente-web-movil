@@ -1,4 +1,4 @@
-﻿$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Stop"
 $srcDir  = $PSScriptRoot
 $destDir = "C:\uniOPOS_PuenteWeb"
 $propFile = Join-Path $env:USERPROFILE "unicentaopos.properties"

@@ -34,7 +34,7 @@ public class TicketBridge {
                 ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(tplB64)));
                 ticket = (TicketInfo) ois.readObject();
                 ois.close();
-                ticket.getLines().clear();
+                ticket.getLines().clear(); java.lang.reflect.Field fId = TicketInfo.class.getDeclaredField("m_sId"); fId.setAccessible(true); fId.set(ticket, UUID.randomUUID().toString()); ticket.setDate(new java.util.Date()); ticket.setTicketId(0);
             } else {
                 ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(inputBase64)));
                 ticket = (TicketInfo) ois.readObject();
@@ -43,28 +43,27 @@ public class TicketBridge {
             for (String item : args.get(2).split(";;")) {
                 if (item.trim().isEmpty()) continue;
                 String[] p = item.split("\\|", -1);
-                TaxInfo tax = new TaxInfo(p, p, p, null, null, Double.parseDouble(p), false, p.length > 8 && !p.isEmpty() ? Integer.parseInt(p) : 1);
+                TaxInfo tax = new TaxInfo(p[4], p[5], p[6], null, null, Double.parseDouble(p[7]), false, p.length > 8 && !p[8].isEmpty() ? Integer.parseInt(p[8]) : 1);
                 Properties props = new Properties();
-                props.setProperty("product.name", p);
-                props.setProperty("product.reference", p.length > 10 && !p.isEmpty() ? p : p);
-                props.setProperty("product.code", p.length > 11 && !p.isEmpty() ? p : p);
-                props.setProperty("product.categoryid", p.length > 12 && !p.isEmpty() ? p : "000");
-                props.setProperty("product.taxcategoryid", p);
+                props.setProperty("product.name", p[1]);
+                props.setProperty("product.reference", p.length > 10 && !p[10].isEmpty() ? p[10] : p[0]);
+                props.setProperty("product.code", p.length > 11 && !p[11].isEmpty() ? p[11] : p[0]);
+                props.setProperty("product.categoryid", p.length > 12 && !p[12].isEmpty() ? p[12] : "000");
+                props.setProperty("product.taxcategoryid", p[6]);
                 props.setProperty("product.warranty", "false");
                 props.setProperty("product.verpatrib", "false");
-                boolean isCom = p.length > 13 && "1".equals(p);
-                props.setProperty("product.com", isCom ? "true" : "false");
+                props.setProperty("product.com", "false");
                 props.setProperty("product.service", "false");
                 props.setProperty("product.vprice", "false");
                 props.setProperty("product.constant", "false");
                 props.setProperty("product.texttip", "");
                 props.setProperty("product.memodate", "1900-01-01 00:00:01");
-                boolean isBar = p.toLowerCase().matches(".*(bebida|cerveza|jugo|gaseosa|coca|agua|licor|coctel|batido).*");
+                boolean isBar = p[1].toLowerCase().matches(".*(bebida|cerveza|jugo|gaseosa|coca|agua|licor|coctel|batido).*");
                 props.setProperty("product.printer", isBar ? "3" : "2");
                 props.setProperty("ticket.updated", "true");
                 props.setProperty("sendstatus", "No");
-                if (p.length > 9 && !p.isEmpty()) { props.setProperty("notes", p); props.setProperty("product.attsetdesc", p); }
-                ticket.addLine(new TicketLineInfo(p, Double.parseDouble(p), Double.parseDouble(p), tax, props));
+                if (p.length > 9 && !p[9].isEmpty()) { props.setProperty("notes", p[9]); props.setProperty("product.attsetdesc", p[9]); }
+                ticket.addLine(new TicketLineInfo(p[0], Double.parseDouble(p[2]), Double.parseDouble(p[3]), tax, props));
             }
             ticket.setTaxes(null);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
