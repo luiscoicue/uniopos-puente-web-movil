@@ -2,7 +2,7 @@
 title uniOPOS PuenteWeb v2.0 - Instalador y Gestor Oficial
 color 0B
 
-set "REPO_URL=https://github.com"
+set "REPO_URL=https://github.com/luiscoicue/uniopos-puente-web-movil/releases/download/v2.0.0/uniOPOS_PuenteWeb_v2.0_Portable.zip"
 set "INSTALL_DIR=C:\uniOPOS_PuenteWeb"
 set "TEMP_ZIP=%TEMP%\uniOPOS_PuenteWeb_v2.0.zip"
 
@@ -146,3 +146,5 @@ echo.
 echo [OK] uniOPOS PuenteWeb v2.0 ha sido desinstalado completamente.
 pause
 goto MENU
+
+
