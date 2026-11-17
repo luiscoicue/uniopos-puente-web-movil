@@ -8,7 +8,7 @@ Sistema puente autocontenido para conectar dispositivos móviles (Android / iOS)
 
 Haz clic en el siguiente botón para descargar el instalador oficial:
 
-[![Descargar uniOPOS PuenteWeb v2.0 para Windows](https://shields.io)](https://github.com)
+[![Descargar para Windows](https://shields.io)](https://github.com)
 
 *(Si el enlace directo descarga una versión previa, baja `uniOPOS_Installer.bat` desde la pestaña [Releases](https://github.com)).*
 
@@ -77,4 +77,5 @@ till.autoRefreshTimer=5
 * `server.js`: Servidor puente API REST y conexión MariaDB (`3316` / `3306`).
 * `setup.ps1` e `iniciar_puente.vbs`: Configurador de entorno y lanzador silencioso.
 * `uniOPOS_Installer.bat`: Gestor interactivo de instalación, IP, reinicio, diagnóstico y desinstalación.
+
 
