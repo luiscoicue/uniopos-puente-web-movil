@@ -62,7 +62,7 @@ if (Test-Path $propFile) {
     Write-Host "   Aviso: No se encontro unicentaopos.properties en $propFile (se omitio este paso)." -ForegroundColor Yellow
 }
 
-# 3. Copiar paquete completo a C:\uniOPOS_PuenteWeb y escribir config.json
+# 3. Copiar paquete completo a C:\uniOPOS_PuenteWeb y escribir config.json (UTF-8 sin BOM)
 Write-Host "`n[3/5] Instalando archivos en $destDir..." -ForegroundColor Cyan
 Get-Process node -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "*uniOPOS*" } | Stop-Process -Force -ErrorAction SilentlyContinue
 
@@ -82,12 +82,14 @@ $cfgObj = [ordered]@{
     unicentaJarPath = $jarPath
     javaPath        = "bin\jre\bin\java.exe"
 }
-$cfgObj | ConvertTo-Json | Set-Content -Path (Join-Path $destDir "config.json") -Encoding UTF8
+$jsonStr = $cfgObj | ConvertTo-Json
+[System.IO.File]::WriteAllText((Join-Path $destDir "config.json"), $jsonStr, (New-Object System.Text.UTF8Encoding $false))
 
 # 4. Configurar Firewall TCP 5000 y perfil de red Private
 Write-Host "[4/5] Configurando Firewall de Windows y perfil de red..." -ForegroundColor Cyan
 Remove-NetFirewallRule -DisplayName "uniOPOS Puente Web 5000" -ErrorAction SilentlyContinue
-New-NetFirewallRule -DisplayName "uniOPOS Puente Web 5000" -Direction Inbound -Protocol TCP -LocalPort 5000 -Action Allow | Out-Null
+Remove-NetFirewallRule -DisplayName "uniOPOS PuenteWeb 5000" -ErrorAction SilentlyContinue
+New-NetFirewallRule -DisplayName "uniOPOS PuenteWeb 5000" -Direction Inbound -Protocol TCP -LocalPort 5000 -Action Allow | Out-Null
 Get-NetConnectionProfile -ErrorAction SilentlyContinue | Set-NetConnectionProfile -NetworkCategory Private -ErrorAction SilentlyContinue
 
 # 5. Crear accesos directos, autoarranque e iniciar servidor
