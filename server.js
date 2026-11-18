@@ -96,7 +96,7 @@ app.get('/api/comandas', (req, res) => res.json({ ok: true, comandas: colaComand
 app.delete('/api/comandas/:id', (req, res) => { colaComandas = colaComandas.filter(c => c.id !== parseInt(req.params.id)); res.json({ ok: true }); });
 
 app.post('/api/pedido', async (req, res) => {
-    const { placeId, placeName, waiterName, items } = req.body;
+    const { placeId, placeName, waiterId, waiterName, items } = req.body;
     if (!placeId || !items || items.length === 0) return res.status(400).json({ ok: false, error: 'Faltan datos' });
     try {
         const [rows] = await pool.query('SELECT content FROM sharedtickets WHERE ID = ?', [placeId]);
@@ -124,11 +124,11 @@ app.post('/api/pedido', async (req, res) => {
         const formattedTableName = `${placeName || 'Mesa'} - ${waiterName || 'Mesero'} (${timeTag})`;
 
         if (rows.length > 0) {
-            await pool.query("UPDATE sharedtickets SET content = ?, appuser = '0', locked = NULL WHERE id = ?", [newBuffer, placeId]);
+            await pool.query("UPDATE sharedtickets SET content = ?, appuser = ?, locked = NULL WHERE id = ?", [newBuffer, String(waiterId || '0'), placeId]);
         } else {
-            await pool.query("INSERT INTO sharedtickets (id, name, content, appuser, pickupid, locked) VALUES (?, ?, ?, '0', 0, NULL)", [placeId, formattedTableName, newBuffer]);
+            await pool.query("INSERT INTO sharedtickets (id, name, content, appuser, pickupid, locked) VALUES (?, ?, ?, ?, 0, NULL)", [placeId, formattedTableName, newBuffer, String(waiterId || '0')]);
         }
-        await pool.query("UPDATE places SET waiter = 'Administrador', ticketid = ?, guests = 0, occupied = COALESCE(occupied, NOW()) WHERE id = ?", [ticketId, placeId]);
+        await pool.query("UPDATE places SET waiter = ?, ticketid = ?, guests = 0, occupied = COALESCE(occupied, NOW()) WHERE id = ?", [waiterName || 'Administrador', ticketId, placeId]);
 
         const barKeywords = /bebida|cerveza|jugo|gaseosa|coca|agua|licor|coctel|batido|bar/i;
         const barItems = items.filter(i => barKeywords.test(i.name) || barKeywords.test(i.catName || ''));
@@ -145,6 +145,35 @@ app.post('/api/pedido', async (req, res) => {
     }
 });
 
+const os = require('os');
+app.get('/api/info', (req, res) => {
+    const nets = os.networkInterfaces();
+    let ip = '127.0.0.1';
+    for (const name of Object.keys(nets)) {
+        for (const net of nets[name]) {
+            if (net.family === 'IPv4' && !net.internal) { ip = net.address; break; }
+        }
+        if (ip !== '127.0.0.1') break;
+    }
+    res.json({ ok: true, ip, port: Number(config.port) || 5000, url: `http://${ip}:${Number(config.port) || 5000}` });
+});
+app.get('/api/meseros', async (req, res) => {
+    try {
+        const [rows] = await pool.query("SELECT id, name, (apppassword IS NOT NULL AND apppassword <> '') AS hasPin FROM people WHERE visible = 1 ORDER BY name");
+        res.json({ ok: true, meseros: rows });
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+app.post('/api/auth', async (req, res) => {
+    try {
+        const { waiterId, pin } = req.body;
+        const [rows] = await pool.query("SELECT id, name, apppassword FROM people WHERE id = ? AND visible = 1", [waiterId]);
+        if (!rows.length) return res.status(404).json({ ok: false, error: 'Mesero no encontrado' });
+        const stored = rows[0].apppassword || 'NULL';
+        const authRes = runJavaBridge(['AUTH', String(pin || ''), stored]);
+        if (authRes === 'OK') return res.json({ ok: true, waiter: { id: rows[0].id, name: rows[0].name } });
+        res.status(401).json({ ok: false, error: 'PIN incorrecto' });
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
 const PORT = Number(config.port) || 5000;
 app.listen(PORT, '0.0.0.0', () => console.log(`PUENTE WEB v2.0 ACTIVO -> Puerto ${PORT}`));
 
