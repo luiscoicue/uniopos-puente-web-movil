@@ -241,6 +241,7 @@ async function sendOrder() {
   } catch (e) { alert('Error de conexión con el servidor'); }
   finally { isSending = false; btn.disabled = false; btn.innerText = 'Enviar a Cocina / Caja'; }
 }
+setInterval(async () => { if (!document.getElementById('viewMesas').classList.contains('hidden') && !document.querySelector('.modal-bg.open')) { try { const r = await fetch('/api/mesas').then(x => x.json()); if (r.ok) { places = r.places; renderMesas(); } } catch(e) {} } }, 3000);
 init();
 </script>
 </body>
