@@ -81,7 +81,7 @@
   <h2 id="cMesaTitle">Comanda Mesa</h2><div class="section-title">Nuevo Pedido (Por enviar a cocina)</div><div id="newCartList"></div>
   <div class="waiter-box"><span style="color:var(--muted);font-size:14px;font-weight:600;">Mesero autenticado:</span><span id="orderWaiterLabel" style="font-weight:800;color:var(--primary);"></span></div>
   <div style="display:flex;gap:10px;margin:14px 0;"><button class="btn-back" style="flex:1;padding:14px;" onclick="closeModals()">Seguir pidiendo</button><button class="btn-primary" id="btnSendOrder" style="flex:2;" onclick="sendOrder()">Enviar a Cocina / Caja</button></div>
-  <div class="section-title">Pedido Actual en Mesa (uniCenta)</div><div id="existingLinesList" style="font-size:14px;color:var(--muted);"></div><div id="existingTotal" style="margin-top:8px;font-weight:800;color:var(--warn);"></div>
+  <div class="section-title">Pedido Actual en Mesa (uniCenta)</div><div id="existingLinesList" style="font-size:14px;color:var(--muted);"></div><div id="existingTotal" style="margin-top:8px;font-weight:800;color:var(--warn);"></div><button class="btn-primary" style="width:100%;margin-top:10px;background:var(--accent);" onclick="comandarUniCenta()">🖨️ Comandar Pendientes (uniCenta)</button>
 </div></div>
 <div class="pin-overlay" id="pinOverlay"><div class="pin-card"><h2 style="font-size:20px;margin-bottom:4px;">🔐 Acceso Meseros uniOPOS</h2><div style="font-size:13px;color:var(--muted);">Selecciona tu usuario e ingresa tu PIN</div><div class="waiter-grid" id="waiterGrid">Cargando meseros...</div><div id="pinPadArea" class="hidden"><div class="pin-dots" id="pinDots">••••</div><div id="pinErr" style="color:var(--danger);font-size:13px;min-height:18px;font-weight:700;"></div><div class="keypad"><button class="k-btn" onclick="pressPin('1')">1</button><button class="k-btn" onclick="pressPin('2')">2</button><button class="k-btn" onclick="pressPin('3')">3</button><button class="k-btn" onclick="pressPin('4')">4</button><button class="k-btn" onclick="pressPin('5')">5</button><button class="k-btn" onclick="pressPin('6')">6</button><button class="k-btn" onclick="pressPin('7')">7</button><button class="k-btn" onclick="pressPin('8')">8</button><button class="k-btn" onclick="pressPin('9')">9</button><button class="k-btn" style="background:var(--danger);font-size:16px;" onclick="clearPin()">Borrar</button><button class="k-btn" onclick="pressPin('0')">0</button><button class="k-btn" style="background:var(--primary);font-size:16px;" onclick="submitPin()">Entrar</button></div></div></div></div><div class="modal-bg" id="qrModal"><div class="modal" style="text-align:center;"><h2>📱 Conectar Celular de Mesero</h2><div style="font-size:13px;color:var(--muted);margin-top:4px;">Escanea con la cámara en la misma red Wi-Fi</div><div class="qr-box" id="qrContainer"></div><div id="qrUrlText" style="font-weight:800;color:var(--primary);font-size:16px;margin-bottom:14px;word-break:break-all;"></div><button class="btn-primary" style="width:100%;" onclick="closeModals()">Cerrar</button></div></div>
 <script>
@@ -235,6 +235,13 @@ function updateBottomBar() {
   document.getElementById('bottomBar').classList.toggle('hidden', cart.length === 0);
 }
 
+
+async function comandarUniCenta() {
+  if (!currentMesa) return;
+  const res = await fetch('/api/comandar/' + currentMesa.id, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ waiterName }) }).then(r=>r.json());
+  alert(res.ok ? res.message : ('Error: ' + res.error));
+  if (res.ok) openCartModal();
+}
 async function openCartModal() {
   document.getElementById('cMesaTitle').innerText = 'Comanda - ' + currentMesa.name;
   syncWaiterSelects(waiterName); renderCartList(); document.getElementById('cartModal').classList.add('open');

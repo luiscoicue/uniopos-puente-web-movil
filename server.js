@@ -105,7 +105,7 @@ app.post('/api/pedido', async (req, res) => {
 
         const [allTaxes] = await pool.query('SELECT id, name, category, rate, COALESCE(rateorder, 1) AS rateorder FROM taxes ORDER BY rateorder ASC');
         const defaultTax = allTaxes.find(t => Number(t.rate) === 0) || allTaxes || { id: '000', name: 'Exento', category: '000', rate: 0, rateorder: '' };
-        const [prodRows] = await pool.query('SELECT ID, REFERENCE, CODE, CATEGORY, TAXCAT, COALESCE(ISCOM, 0) AS ISCOM FROM products WHERE ID IN (?)', [items.map(i => i.id)]);
+        const [prodRows] = await pool.query('SELECT ID, REFERENCE, CODE, CATEGORY, TAXCAT, COALESCE(ISCOM, 0) AS ISCOM, COALESCE(PRINTER, "") AS PRINTER FROM products WHERE ID IN (?)', [items.map(i => i.id)]);
         const prodMap = new Map(prodRows.map(p => [p.ID, p]));
 
         const serializedLines = items.map(it => {
@@ -114,7 +114,7 @@ app.post('/api/pedido', async (req, res) => {
             const dbProd = prodMap.get(it.id) || {};
             const tax = allTaxes.find(t => t.category === dbProd.TAXCAT) || defaultTax;
             const isComFlag = (it.isCom || Number(dbProd.ISCOM) === 1) ? '1' : '0';
-            return [it.id, cleanName, it.qty, it.price, tax.id, tax.name, tax.category, tax.rate, tax.rateorder, cleanNotes, dbProd.REFERENCE || it.id, dbProd.CODE || it.id, dbProd.CATEGORY || '000', isComFlag].join('|');
+            return [it.id, cleanName, it.qty, it.price, tax.id, tax.name, tax.category, tax.rate, tax.rateorder, cleanNotes, dbProd.REFERENCE || it.id, dbProd.CODE || it.id, dbProd.CATEGORY || '000', isComFlag, String(dbProd.PRINTER || '')].join('|');
         }).join(';;');
 
         const [ticketId, newBase64] = runJavaBridge(['WRITE', currentBase64, serializedLines, PLANTILLA_PATH]).split('::');
@@ -135,8 +135,8 @@ app.post('/api/pedido', async (req, res) => {
         const cocinaItems = items.filter(i => !barKeywords.test(i.name) && !barKeywords.test(i.catName || ''));
         const hora = new Date().toLocaleTimeString();
 
-        if (cocinaItems.length > 0) colaComandas.unshift({ id: comandaSeq++, area: 'COCINA', mesa: formattedTableName, mesero: waiterName || 'Móvil', hora, items: cocinaItems });
-        if (barItems.length > 0) colaComandas.unshift({ id: comandaSeq++, area: 'BAR', mesa: formattedTableName, mesero: waiterName || 'Móvil', hora, items: barItems });
+        if (cocinaItems.length > 0) colaComandas.unshift({ id: comandaSeq++, area: 'COCINA', mesa: formattedTableName, mesero: waiterName || 'Móvil', hora, timestamp: Date.now(), items: cocinaItems });
+        if (barItems.length > 0) colaComandas.unshift({ id: comandaSeq++, area: 'BAR', mesa: formattedTableName, mesero: waiterName || 'Móvil', hora, timestamp: Date.now(), items: barItems });
 
         res.json({ ok: true, message: 'Pedido enviado' });
     } catch (err) {
@@ -146,6 +146,25 @@ app.post('/api/pedido', async (req, res) => {
 });
 
 const os = require('os');
+
+app.post('/api/comandar/:placeId', async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT name, content FROM sharedtickets WHERE ID = ?', [req.params.placeId]);
+        if (rows.length === 0) return res.status(404).json({ ok: false, error: 'Mesa sin pedido abierto' });
+        const raw = rows[0].content || rows[0].CONTENT;
+        const mesaName = rows[0].name || rows[0].NAME || 'Mesa';
+        const [newB64, jsonLines] = runJavaBridge(['MARK_SENT', Buffer.from(raw).toString('base64')]).split('::');
+        const pendientes = JSON.parse(jsonLines || '[]');
+        if (pendientes.length === 0) return res.json({ ok: true, sentCount: 0, message: 'Todas las líneas ya fueron comandadas' });
+        await pool.query('UPDATE sharedtickets SET content = ? WHERE ID = ?', [Buffer.from(newB64, 'base64'), req.params.placeId]);
+        const hora = new Date().toLocaleTimeString();
+        const cocina = pendientes.filter(l => l.printer !== '3');
+        const bar = pendientes.filter(l => l.printer === '3');
+        if (cocina.length > 0) colaComandas.unshift({ id: comandaSeq++, area: 'COCINA', mesa: mesaName, mesero: req.body.waiterName || 'uniCenta', hora, timestamp: Date.now(), items: cocina });
+        if (bar.length > 0) colaComandas.unshift({ id: comandaSeq++, area: 'BAR', mesa: mesaName, mesero: req.body.waiterName || 'uniCenta', hora, timestamp: Date.now(), items: bar });
+        res.json({ ok: true, sentCount: pendientes.length, message: 'Comandas enviadas a Cocina/Bar (sendstatus=Yes)' });
+    } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
 app.get('/api/info', (req, res) => {
     const nets = os.networkInterfaces();
     let ip = '127.0.0.1';

@@ -10,10 +10,16 @@ public class TicketBridge {
         String mode = args.get(0);
         String inputBase64 = args.size() > 1 ? args.get(1) : "";
 
-        if ("AUTH".equals(mode)) { String pin = args.size() > 1 ? args.get(1) : ""; String stored = args.size() > 2 ? args.get(2) : ""; boolean ok = (stored == null || stored.isEmpty() || "NULL".equalsIgnoreCase(stored)) ? true : Hashcypher.authenticate(pin, stored); System.out.println(ok ? "OK" : "FAIL"); return; } if ("READ".equals(mode)) {
+        if ("AUTH".equals(mode)) {
+            String pin = args.size() > 1 ? args.get(1) : "";
+            String stored = args.size() > 2 ? args.get(2) : "";
+            boolean ok = (stored == null || stored.isEmpty() || "NULL".equalsIgnoreCase(stored)) ? true : Hashcypher.authenticate(pin, stored);
+            System.out.println(ok ? "OK" : "FAIL");
+            return;
+        }
+        if ("READ".equals(mode)) {
             if (inputBase64.isEmpty() || "EMPTY".equals(inputBase64)) { System.out.println("[]"); return; }
-            byte[] data = Base64.getDecoder().decode(inputBase64);
-            ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data));
+            ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(inputBase64)));
             TicketInfo ticket = (TicketInfo) ois.readObject();
             ois.close();
             StringBuilder sb = new StringBuilder("[");
@@ -23,11 +29,39 @@ public class TicketBridge {
                 if (i > 0) sb.append(",");
                 String name = l.getProductName() != null ? l.getProductName().replace("\"", "\\\"") : "";
                 String notes = l.getProperty("notes") != null ? l.getProperty("notes").replace("\"", "\\\"") : "";
-                sb.append(String.format(Locale.US, "{\"name\":\"%s\",\"qty\":%.2f,\"price\":%.2f,\"total\":%.2f,\"notes\":\"%s\"}", name, l.getMultiply(), l.getPrice(), l.getValue(), notes));
+                String printer = l.getProperty("product.printer") != null ? l.getProperty("product.printer") : "2";
+                String sent = l.getProperty("sendstatus") != null ? l.getProperty("sendstatus") : "No";
+                sb.append(String.format(Locale.US, "{\"name\":\"%s\",\"qty\":%.2f,\"price\":%.2f,\"total\":%.2f,\"notes\":\"%s\",\"printer\":\"%s\",\"sendstatus\":\"%s\"}", name, l.getMultiply(), l.getPrice(), l.getValue(), notes, printer, sent));
             }
             sb.append("]");
             System.out.println(sb.toString());
-        } else if ("WRITE".equals(mode)) {
+        } else if ("MARK_SENT".equals(mode)) {
+            if (inputBase64.isEmpty() || "EMPTY".equals(inputBase64)) { System.out.println("EMPTY::[]"); return; }
+            ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(inputBase64)));
+            TicketInfo ticket = (TicketInfo) ois.readObject();
+            ois.close();
+            StringBuilder sb = new StringBuilder("[");
+            boolean first = true;
+            for (TicketLineInfo l : ticket.getLines()) {
+                if (!"Yes".equalsIgnoreCase(l.getProperty("sendstatus"))) {
+                    if (!first) sb.append(",");
+                    first = false;
+                    String name = l.getProductName() != null ? l.getProductName().replace("\"", "\\\"") : "";
+                    String notes = l.getProperty("notes") != null ? l.getProperty("notes").replace("\"", "\\\"") : "";
+                    String printer = l.getProperty("product.printer") != null ? l.getProperty("product.printer") : "2";
+                    sb.append(String.format(Locale.US, "{\"name\":\"%s\",\"qty\":%.2f,\"notes\":\"%s\",\"printer\":\"%s\"}", name, l.getMultiply(), notes, printer));
+                    l.setProperty("sendstatus", "Yes");
+                }
+            }
+            sb.append("]");
+            ticket.setTaxes(null);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(ticket);
+            oos.flush(); oos.close();
+            System.out.println(Base64.getEncoder().encodeToString(baos.toByteArray()) + "::" + sb.toString());
+        }
+        else if ("WRITE".equals(mode)) {
             TicketInfo ticket;
             String tplPath = args.size() > 3 && !args.get(3).isEmpty() ? args.get(3) : "plantilla.b64";
             if (inputBase64.isEmpty() || "EMPTY".equals(inputBase64)) {
@@ -35,7 +69,10 @@ public class TicketBridge {
                 ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(tplB64)));
                 ticket = (TicketInfo) ois.readObject();
                 ois.close();
-                ticket.getLines().clear(); java.lang.reflect.Field fid=TicketInfo.class.getDeclaredField("m_sId"); fid.setAccessible(true); fid.set(ticket, UUID.randomUUID().toString());
+                ticket.getLines().clear();
+                java.lang.reflect.Field fid = TicketInfo.class.getDeclaredField("m_sId");
+                fid.setAccessible(true);
+                fid.set(ticket, UUID.randomUUID().toString());
             } else {
                 ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(inputBase64)));
                 ticket = (TicketInfo) ois.readObject();
@@ -59,8 +96,10 @@ public class TicketBridge {
                 props.setProperty("product.constant", "false");
                 props.setProperty("product.texttip", "");
                 props.setProperty("product.memodate", "1900-01-01 00:00:01");
-                boolean isBar = p[1].toLowerCase().matches(".*(bebida|cerveza|jugo|gaseosa|coca|agua|licor|coctel|batido).*");
-                props.setProperty("product.printer", isBar ? "3" : "2");
+                String dbPrinter = (p.length > 14 && !p[14].isEmpty()) ? p[14].trim() : "";
+                boolean isBar = "3".equals(dbPrinter) || (dbPrinter.isEmpty() && p[1].toLowerCase().matches(".*(bebida|cerveza|jugo|gaseosa|coca|agua|licor|coctel|batido).*"));
+                String targetPrinter = ("2".equals(dbPrinter) || "3".equals(dbPrinter)) ? dbPrinter : (isBar ? "3" : "2");
+                props.setProperty("product.printer", targetPrinter);
                 props.setProperty("ticket.updated", "true");
                 props.setProperty("sendstatus", "No");
                 if (p.length > 9 && !p[9].isEmpty()) { props.setProperty("notes", p[9]); props.setProperty("product.attsetdesc", p[9]); }
