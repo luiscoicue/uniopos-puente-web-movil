@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 const { execFileSync } = require('child_process');
@@ -30,6 +30,21 @@ const CLASSPATH = `${UNICENTA_JAR};${HELPER_DIR}`;
 
 const localJava = path.resolve(__dirname, config.javaPath || 'bin\\jre\\bin\\java.exe');
 const JAVA_BIN = fs.existsSync(localJava) ? localJava : 'java';
+
+function agregarAComanda(area, placeId, mesaName, mesero, itemsNuevos) {
+    if (!itemsNuevos || itemsNuevos.length === 0) return;
+    const hora = new Date().toLocaleTimeString();
+    const existente = colaComandas.find(c => c.area === area && c.placeId === placeId);
+    if (existente) {
+        const adiciones = itemsNuevos.map(it => ({ ...it, name: `[ADICIóN] ${it.name}`, isAdicion: true }));
+        existente.items.push(...adiciones);
+        existente.hora = hora;
+        existente.timestamp = Date.now();
+        colaComandas = [existente, ...colaComandas.filter(c => c.id !== existente.id)];
+    } else {
+        colaComandas.unshift({ id: comandaSeq++, area, placeId, mesa: mesaName, mesero: mesero || 'Móvil', hora, timestamp: Date.now(), items: itemsNuevos });
+    }
+}
 
 let colaComandas = [];
 let comandaSeq = 1;
@@ -85,13 +100,16 @@ app.get('/api/menu', async (req, res) => {
 app.get('/api/mesa/:id', async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT content FROM sharedtickets WHERE ID = ?', [req.params.id]);
-        const raw = rows.length > 0 ? (rows.content || rows.CONTENT) : null;
+        const raw = rows.length > 0 ? (rows[0].content || rows[0].CONTENT) : null;
         if (!raw) return res.json({ ok: true, lines: [], total: 0 });
         const lines = JSON.parse(runJavaBridge(['READ', Buffer.from(raw).toString('base64')]));
         res.json({ ok: true, lines, total: lines.reduce((acc, item) => acc + item.total, 0) });
     } catch (err) { res.status(500).json({ ok: false, error: err.message }); }
 });
 
+
+app.get('/cocina', (req, res) => res.sendFile(path.join(__dirname, 'public', 'comandas.html')));
+app.get('/bar', (req, res) => res.sendFile(path.join(__dirname, 'public', 'comandas.html')));
 app.get('/api/comandas', (req, res) => res.json({ ok: true, comandas: colaComandas }));
 app.delete('/api/comandas/:id', (req, res) => { colaComandas = colaComandas.filter(c => c.id !== parseInt(req.params.id)); res.json({ ok: true }); });
 
@@ -100,12 +118,12 @@ app.post('/api/pedido', async (req, res) => {
     if (!placeId || !items || items.length === 0) return res.status(400).json({ ok: false, error: 'Faltan datos' });
     try {
         const [rows] = await pool.query('SELECT content FROM sharedtickets WHERE ID = ?', [placeId]);
-        const raw = rows.length > 0 ? (rows.content || rows.CONTENT) : null;
+        const raw = rows.length > 0 ? (rows[0].content || rows[0].CONTENT) : null;
         const currentBase64 = raw ? Buffer.from(raw).toString('base64') : 'EMPTY';
 
         const [allTaxes] = await pool.query('SELECT id, name, category, rate, COALESCE(rateorder, 1) AS rateorder FROM taxes ORDER BY rateorder ASC');
-        const defaultTax = allTaxes.find(t => Number(t.rate) === 0) || allTaxes || { id: '000', name: 'Exento', category: '000', rate: 0, rateorder: '' };
-        const [prodRows] = await pool.query('SELECT ID, REFERENCE, CODE, CATEGORY, TAXCAT, COALESCE(ISCOM, 0) AS ISCOM, COALESCE(PRINTER, "") AS PRINTER FROM products WHERE ID IN (?)', [items.map(i => i.id)]);
+        const defaultTax = allTaxes.find(t => Number(t.rate) === 0) || allTaxes[0] || { id: '000', name: 'Exento', category: '000', rate: 0, rateorder: '' };
+        const [prodRows] = await pool.query('SELECT ID, REFERENCE, CODE, CATEGORY, TAXCAT, COALESCE(ISCOM, 0) AS ISCOM, COALESCE(CAST(ATTRIBUTES AS CHAR), "") AS ATTR_XML FROM products WHERE ID IN (?)', [items.map(i => i.id)]);
         const prodMap = new Map(prodRows.map(p => [p.ID, p]));
 
         const serializedLines = items.map(it => {
@@ -114,7 +132,7 @@ app.post('/api/pedido', async (req, res) => {
             const dbProd = prodMap.get(it.id) || {};
             const tax = allTaxes.find(t => t.category === dbProd.TAXCAT) || defaultTax;
             const isComFlag = (it.isCom || Number(dbProd.ISCOM) === 1) ? '1' : '0';
-            return [it.id, cleanName, it.qty, it.price, tax.id, tax.name, tax.category, tax.rate, tax.rateorder, cleanNotes, dbProd.REFERENCE || it.id, dbProd.CODE || it.id, dbProd.CATEGORY || '000', isComFlag, String(dbProd.PRINTER || '')].join('|');
+            return [it.id, cleanName, it.qty, it.price, tax.id, tax.name, tax.category, tax.rate, tax.rateorder, cleanNotes, dbProd.REFERENCE || it.id, dbProd.CODE || it.id, dbProd.CATEGORY || '000', isComFlag, ((dbProd.ATTR_XML || '').match(/key="product\.printer">(\d+)/i)?.[1] || '')].join('|');
         }).join(';;');
 
         const [ticketId, newBase64] = runJavaBridge(['WRITE', currentBase64, serializedLines, PLANTILLA_PATH]).split('::');
@@ -135,8 +153,8 @@ app.post('/api/pedido', async (req, res) => {
         const cocinaItems = items.filter(i => !barKeywords.test(i.name) && !barKeywords.test(i.catName || ''));
         const hora = new Date().toLocaleTimeString();
 
-        if (cocinaItems.length > 0) colaComandas.unshift({ id: comandaSeq++, area: 'COCINA', mesa: formattedTableName, mesero: waiterName || 'Móvil', hora, timestamp: Date.now(), items: cocinaItems });
-        if (barItems.length > 0) colaComandas.unshift({ id: comandaSeq++, area: 'BAR', mesa: formattedTableName, mesero: waiterName || 'Móvil', hora, timestamp: Date.now(), items: barItems });
+        agregarAComanda('COCINA', placeId, formattedTableName, waiterName, cocinaItems);
+        agregarAComanda('BAR', placeId, formattedTableName, waiterName, barItems);
 
         res.json({ ok: true, message: 'Pedido enviado' });
     } catch (err) {
@@ -160,8 +178,8 @@ app.post('/api/comandar/:placeId', async (req, res) => {
         const hora = new Date().toLocaleTimeString();
         const cocina = pendientes.filter(l => l.printer !== '3');
         const bar = pendientes.filter(l => l.printer === '3');
-        if (cocina.length > 0) colaComandas.unshift({ id: comandaSeq++, area: 'COCINA', mesa: mesaName, mesero: req.body.waiterName || 'uniCenta', hora, timestamp: Date.now(), items: cocina });
-        if (bar.length > 0) colaComandas.unshift({ id: comandaSeq++, area: 'BAR', mesa: mesaName, mesero: req.body.waiterName || 'uniCenta', hora, timestamp: Date.now(), items: bar });
+        agregarAComanda('COCINA', req.params.placeId, mesaName, req.body.waiterName || 'uniCenta', cocina);
+        agregarAComanda('BAR', req.params.placeId, mesaName, req.body.waiterName || 'uniCenta', bar);
         res.json({ ok: true, sentCount: pendientes.length, message: 'Comandas enviadas a Cocina/Bar (sendstatus=Yes)' });
     } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });

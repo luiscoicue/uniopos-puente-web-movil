@@ -39,6 +39,12 @@
   .btn-done { width: 100%; padding: 12px; background: #334155; color: #fff; border: none; border-radius: 8px; font-weight: 800; font-size: 15px; cursor: pointer; transition: 0.15s; }
   .btn-done:hover { background: #16a34a; }
   .empty-state { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #64748b; font-size: 18px; background: #1e293b; border-radius: 12px; border: 1px dashed #334155; }
+
+  @media print { body * { visibility: hidden; } #printTicketArea, #printTicketArea * { visibility: visible; } #printTicketArea { position: fixed; left: 0; top: 0; width: 100%; background: #fff; color: #000; padding: 10px; font-family: monospace; } }
+  .ticket-actions { display: flex; gap: 8px; }
+  .btn-print { padding: 12px; background: #0284c7; color: #fff; border: none; border-radius: 8px; font-weight: 800; font-size: 14px; cursor: pointer; }
+  .auto-print-btn { background: #334155; color: #cbd5e1; border: 1px solid #475569; padding: 9px 12px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; }
+  .auto-print-btn.on { background: #0284c7; color: #fff; border-color: #38bdf8; }
 </style>
 </head>
 <body>
@@ -53,11 +59,11 @@
       <button class="filter-btn" data-filter="COCINA" onclick="setFilter('COCINA')">Cocina <span class="badge-count" id="cnt-COCINA">0</span></button>
       <button class="filter-btn" data-filter="BAR" onclick="setFilter('BAR')">Bar <span class="badge-count" id="cnt-BAR">0</span></button>
     </div>
-    <button id="soundBtn" class="sound-btn" onclick="toggleSound()">🔇 Activar Sonido</button>
+    <button id="autoPrintBtn" class="auto-print-btn" onclick="toggleAutoPrint()">🖨️ Auto-Imprimir: OFF</button><button id="soundBtn" class="sound-btn" onclick="toggleSound()">🔇 Activar Sonido</button>
     <div class="clock" id="clock">00:00:00</div>
   </div>
 </header>
-<div class="grid" id="ticketsGrid"></div>
+<div class="grid" id="ticketsGrid"></div><div id="printTicketArea" style="display:none;"></div>
 <script>
 let currentFilter = localStorage.getItem('kds_filter') || 'ALL';
 let soundEnabled = false;
@@ -74,7 +80,39 @@ function initFiltersUI() {
 function setFilter(filter) {
   currentFilter = filter;
   localStorage.setItem('kds_filter', filter);
-  initFiltersUI();
+  
+const pathStation = window.location.pathname.toUpperCase();
+const urlParamStation = (new URLSearchParams(window.location.search).get("estacion") || "").toUpperCase();
+const lockedStation = pathStation.includes("COCINA") || urlParamStation === "COCINA" ? "COCINA" : (pathStation.includes("BAR") || urlParamStation === "BAR" ? "BAR" : null);
+let autoPrint = localStorage.getItem("kds_autoprint_" + (lockedStation || "ALL")) === "1";
+if (lockedStation) {
+  currentFilter = lockedStation;
+  document.querySelector(".title-box h1").innerText = "Monitor de " + lockedStation + " (KDS)";
+  document.querySelector(".filters").style.display = "none";
+}
+function updateAutoPrintUI() {
+  const b = document.getElementById("autoPrintBtn");
+  if (!b) return;
+  b.classList.toggle("on", autoPrint);
+  b.innerText = autoPrint ? "🖨️ Auto-Imprimir: ON" : "🖨️ Auto-Imprimir: OFF";
+}
+function toggleAutoPrint() {
+  autoPrint = !autoPrint;
+  localStorage.setItem("kds_autoprint_" + (lockedStation || "ALL"), autoPrint ? "1" : "0");
+  updateAutoPrintUI();
+}
+function printComanda(id) {
+  const c = lastComandas.find(x => Number(x.id) === Number(id));
+  if (!c) return;
+  const areaDiv = document.getElementById("printTicketArea");
+  areaDiv.style.display = "block";
+  areaDiv.innerHTML = "<h2 style='margin:0 0 6px 0;'>COMANDA " + c.area + " #" + c.id + "</h2><div><b>" + c.mesa + "</b></div><div>Mesero: " + c.mesero + " | " + c.hora + "</div><hr>" + c.items.map(i => "<div style='font-size:16px;margin:4px 0;'><b>" + i.qty + "x</b> " + i.name + (i.notes ? "<br><i>>> " + i.notes + "</i>" : "") + "</div>").join("") + "<hr>";
+  window.print();
+  setTimeout(() => { areaDiv.style.display = "none"; }, 500);
+}
+updateAutoPrintUI();
+
+initFiltersUI();
   renderComandas();
 }
 
@@ -178,7 +216,7 @@ function renderComandas() {
             `).join('')}
           </div>
         </div>
-        <button class="btn-done" onclick="despachar(${c.id})">✔ Marcar Despachado</button>
+        <div class="ticket-actions"><button class="btn-print" onclick="printComanda(${c.id})">🖨️ Imprimir</button><button class="btn-done" style="flex:1;" onclick="despachar(${c.id})">✔ Despachar</button></div>
       </div>
     `;
   }).join('');
@@ -198,7 +236,7 @@ async function loadComandas() {
         if (currentFilter === 'BAR') return area === 'BAR';
         return area !== 'BAR';
       });
-      if (relevante) playKitchenBell();
+      if (relevante) { playKitchenBell(); if (autoPrint && nuevos.length > 0) printComanda(nuevos[0].id); }
     }
     knownMaxId = maxId;
     lastComandas = list;
