@@ -3,3 +3,17 @@ src/node_modules/
 src/config.json
 dist/*.exe
 dist/*.zip
+
+node_modules/
+bin/
+config.json
+*.class
+*.bak
+
+
+node_modules/
+bin/
+config.json
+*.class
+*.bak
+
