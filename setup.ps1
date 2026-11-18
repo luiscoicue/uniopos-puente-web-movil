@@ -46,11 +46,7 @@ if (Test-Path $propFile) {
 }
 
 # 3. Generar config.json en UTF-8 sin BOM
-$cfgObj = @{
-    port = 5000
-    db = @{ host = $dbHost; port = $dbPort; user = $dbUser; password = $dbPass; database = $dbName }
-    unicentaJar = $jarPath
-}
+$cfgObj = @{ port = 5000; dbHost = $dbHost; dbPort = $dbPort; dbUser = $dbUser; dbPassword = $dbPass; dbName = $dbName; unicentaJarPath = $jarPath }
 $utf8NoBom = New-Object System.Text.UTF8Encoding $false
 [System.IO.File]::WriteAllText("$destDir\config.json", ($cfgObj | ConvertTo-Json -Depth 5), $utf8NoBom)
 
