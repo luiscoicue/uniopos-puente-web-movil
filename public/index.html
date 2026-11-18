@@ -136,7 +136,7 @@ async function openQrModal(){
   const box = document.getElementById("qrContainer"); box.innerHTML = ""; box.appendChild(img);
   document.getElementById("qrModal").classList.add("open");
 }
-if(waiterId && waiterName){ syncWaiterSelects(waiterName); document.getElementById("pinOverlay").classList.add("hidden"); } else { openPinLock(); }
+openPinLock();
 
 const fmt = (n) => '$' + Math.round(n).toLocaleString('es-CO');
 
