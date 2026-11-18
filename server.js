@@ -104,7 +104,7 @@ app.post('/api/pedido', async (req, res) => {
         const currentBase64 = raw ? Buffer.from(raw).toString('base64') : 'EMPTY';
 
         const [allTaxes] = await pool.query('SELECT id, name, category, rate, COALESCE(rateorder, 1) AS rateorder FROM taxes ORDER BY rateorder ASC');
-        const defaultTax = allTaxes.find(t => Number(t.rate) === 0) || allTaxes || { id: '000', name: 'Exento', category: '000', rate: 0, rateorder: 1 };
+        const defaultTax = allTaxes.find(t => Number(t.rate) === 0) || allTaxes || { id: '000', name: 'Exento', category: '000', rate: 0, rateorder: '' };
         const [prodRows] = await pool.query('SELECT ID, REFERENCE, CODE, CATEGORY, TAXCAT, COALESCE(ISCOM, 0) AS ISCOM FROM products WHERE ID IN (?)', [items.map(i => i.id)]);
         const prodMap = new Map(prodRows.map(p => [p.ID, p]));
 

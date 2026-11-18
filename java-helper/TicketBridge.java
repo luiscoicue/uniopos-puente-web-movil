@@ -1,1 +1,77 @@
-import java.io.*;import java.nio.file.*;import java.util.*;import com.unicenta.pos.ticket.*;import com.unicenta.pos.util.Hashcypher;public class TicketBridge{public static void main(String... rawArgs)throws Exception{List<String> args=Arrays.asList(rawArgs);String mode=args.get(0);String inputBase64=args.size()>1?args.get(1):"";if("AUTH".equals(mode)){String pin=args.size()>1?args.get(1):"";String stored=args.size()>2?args.get(2):"";boolean ok=(stored==null||stored.isEmpty()||"NULL".equalsIgnoreCase(stored))?true:Hashcypher.authenticate(pin,stored);System.out.println(ok?"OK":"FAIL");return;}if("READ".equals(mode)){if(inputBase64.isEmpty()||"EMPTY".equals(inputBase64)){System.out.println("[]");return;}byte[] data=Base64.getDecoder().decode(inputBase64);ObjectInputStream ois=new ObjectInputStream(new ByteArrayInputStream(data));TicketInfo ticket=(TicketInfo)ois.readObject();ois.close();StringBuilder sb=new StringBuilder("[");List<TicketLineInfo> lines=ticket.getLines();for(int i=0;i<lines.size();i++){TicketLineInfo l=lines.get(i);if(i>0)sb.append(",");String name=l.getProductName()!=null?l.getProductName().replace("\"","\\\""):"";String notes=l.getProperty("notes")!=null?l.getProperty("notes").replace("\"","\\\""):"";sb.append(String.format(Locale.US,"{\"name\":\"%s\",\"qty\":%.2f,\"price\":%.2f,\"total\":%.2f,\"notes\":\"%s\"}",name,l.getMultiply(),l.getPrice(),l.getValue(),notes));}sb.append("]");System.out.println(sb.toString());}else if("WRITE".equals(mode)){TicketInfo ticket;String tplPath=args.size()>3&&!args.get(3).isEmpty()?args.get(3):"plantilla.b64";if(inputBase64.isEmpty()||"EMPTY".equals(inputBase64)){String tplB64=new String(Files.readAllBytes(Paths.get(tplPath)),"UTF-8").trim();ObjectInputStream ois=new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(tplB64)));ticket=(TicketInfo)ois.readObject();ois.close();}else{ObjectInputStream ois=new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(inputBase64)));ticket=(TicketInfo)ois.readObject();ois.close();}String linesRaw=args.size()>2?args.get(2):"";if(!linesRaw.isEmpty()){for(String row:linesRaw.split("\u003b\u003b")){if(row.trim().isEmpty())continue;String[] f=row.split("\\|",-1);TaxInfo tax=new TaxInfo(f[4],f[5],f[6],null,null,Double.parseDouble(f[7]),false,Integer.parseInt(f[8]));TicketLineInfo line=new TicketLineInfo(f[0],f[1],f[6],Double.parseDouble(f[2]),Double.parseDouble(f[3]),tax);line.setProperty("product.name",f[1]);if(f.length>9&&f[9]!=null&&!f[9].isEmpty())line.setProperty("notes",f[9]);if(f.length>10&&f[10]!=null&&!f[10].isEmpty())line.setProperty("product.reference",f[10]);if(f.length>11&&f[11]!=null&&!f[11].isEmpty())line.setProperty("product.code",f[11]);if(f.length>12&&f[12]!=null&&!f[12].isEmpty())line.setProperty("product.categoryid",f[12]);if(f.length>13&&"1".equals(f[13]))line.setProperty("product.com","true");ticket.addLine(line);}ticket.refreshLines();}ByteArrayOutputStream baos=new ByteArrayOutputStream();ObjectOutputStream oos=new ObjectOutputStream(baos);oos.writeObject(ticket);oos.flush();oos.close();System.out.println(ticket.getId()+"::"+Base64.getEncoder().encodeToString(baos.toByteArray()));}}}
+import java.io.*;
+import java.nio.file.*;
+import java.util.*;
+import com.unicenta.pos.ticket.*;
+import com.unicenta.pos.util.Hashcypher;
+
+public class TicketBridge {
+    public static void main(String... rawArgs) throws Exception {
+        List<String> args = Arrays.asList(rawArgs);
+        String mode = args.get(0);
+        String inputBase64 = args.size() > 1 ? args.get(1) : "";
+
+        if ("AUTH".equals(mode)) { String pin = args.size() > 1 ? args.get(1) : ""; String stored = args.size() > 2 ? args.get(2) : ""; boolean ok = (stored == null || stored.isEmpty() || "NULL".equalsIgnoreCase(stored)) ? true : Hashcypher.authenticate(pin, stored); System.out.println(ok ? "OK" : "FAIL"); return; } if ("READ".equals(mode)) {
+            if (inputBase64.isEmpty() || "EMPTY".equals(inputBase64)) { System.out.println("[]"); return; }
+            byte[] data = Base64.getDecoder().decode(inputBase64);
+            ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data));
+            TicketInfo ticket = (TicketInfo) ois.readObject();
+            ois.close();
+            StringBuilder sb = new StringBuilder("[");
+            List<TicketLineInfo> lines = ticket.getLines();
+            for (int i = 0; i < lines.size(); i++) {
+                TicketLineInfo l = lines.get(i);
+                if (i > 0) sb.append(",");
+                String name = l.getProductName() != null ? l.getProductName().replace("\"", "\\\"") : "";
+                String notes = l.getProperty("notes") != null ? l.getProperty("notes").replace("\"", "\\\"") : "";
+                sb.append(String.format(Locale.US, "{\"name\":\"%s\",\"qty\":%.2f,\"price\":%.2f,\"total\":%.2f,\"notes\":\"%s\"}", name, l.getMultiply(), l.getPrice(), l.getValue(), notes));
+            }
+            sb.append("]");
+            System.out.println(sb.toString());
+        } else if ("WRITE".equals(mode)) {
+            TicketInfo ticket;
+            String tplPath = args.size() > 3 && !args.get(3).isEmpty() ? args.get(3) : "plantilla.b64";
+            if (inputBase64.isEmpty() || "EMPTY".equals(inputBase64)) {
+                String tplB64 = new String(Files.readAllBytes(Paths.get(tplPath)), "UTF-8").trim();
+                ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(tplB64)));
+                ticket = (TicketInfo) ois.readObject();
+                ois.close();
+                ticket.getLines().clear(); java.lang.reflect.Field fid=TicketInfo.class.getDeclaredField("m_sId"); fid.setAccessible(true); fid.set(ticket, UUID.randomUUID().toString());
+            } else {
+                ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(inputBase64)));
+                ticket = (TicketInfo) ois.readObject();
+                ois.close();
+            }
+            for (String item : args.get(2).split(";;")) {
+                if (item.trim().isEmpty()) continue;
+                String[] p = item.split("\\|", -1);
+                TaxInfo tax = new TaxInfo(p[4], p[5], p[6], null, null, Double.parseDouble(p[7]), false, p.length > 8 && !p[8].isEmpty() ? Integer.parseInt(p[8]) : 1);
+                Properties props = new Properties();
+                props.setProperty("product.name", p[1]);
+                props.setProperty("product.reference", p.length > 10 && !p[10].isEmpty() ? p[10] : p[0]);
+                props.setProperty("product.code", p.length > 11 && !p[11].isEmpty() ? p[11] : p[0]);
+                props.setProperty("product.categoryid", p.length > 12 && !p[12].isEmpty() ? p[12] : "000");
+                props.setProperty("product.taxcategoryid", p[6]);
+                props.setProperty("product.warranty", "false");
+                props.setProperty("product.verpatrib", "false");
+                props.setProperty("product.com", (p.length > 13 && "1".equals(p)) ? "true" : "false");
+                props.setProperty("product.service", "false");
+                props.setProperty("product.vprice", "false");
+                props.setProperty("product.constant", "false");
+                props.setProperty("product.texttip", "");
+                props.setProperty("product.memodate", "1900-01-01 00:00:01");
+                boolean isBar = p[1].toLowerCase().matches(".*(bebida|cerveza|jugo|gaseosa|coca|agua|licor|coctel|batido).*");
+                props.setProperty("product.printer", isBar ? "3" : "2");
+                props.setProperty("ticket.updated", "true");
+                props.setProperty("sendstatus", "No");
+                if (p.length > 9 && !p[9].isEmpty()) { props.setProperty("notes", p[9]); props.setProperty("product.attsetdesc", p[9]); }
+                ticket.addLine(new TicketLineInfo(p[0], Double.parseDouble(p[2]), Double.parseDouble(p[3]), tax, props));
+            }
+            ticket.setTaxes(null);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(ticket);
+            oos.flush(); oos.close();
+            System.out.println(ticket.getId() + "::" + Base64.getEncoder().encodeToString(baos.toByteArray()));
+        }
+    }
+}
