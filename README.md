@@ -21,3 +21,14 @@ cd C:\uniOPOS_PuenteWeb
 .\bin\jre\bin\java.exe -cp ".\java-helper;C:\Program Files\unicenta-opos\app\unicentaopos.jar" TicketBridge AUTH "1234" "sha1:7110EDA4D09E062AA5E4A390B0A572AC0D2C0220"
 Start-Process -FilePath "C:\uniOPOS_PuenteWeb\bin\node\node.exe" -ArgumentList "C:\uniOPOS_PuenteWeb\server.js" -WorkingDirectory "C:\uniOPOS_PuenteWeb" -WindowStyle Hidden
 ```
+## Actualización v2.0.1 - Suma de Adiciones y Comandas KDS
+
+- **Adiciones en sharedtickets:** Corregida la lectura de `rows[0].content` y `allTaxes[0]` en `server.js` para fusionar nuevos productos con la cuenta activa de la mesa en uniCenta oPOS 5.0.1 sin sobreescribir los anteriores.
+- **Agrupación en Cocina y Bar (/cocina, /bar):** Las adiciones en una mesa activa se suman a la tarjeta existente etiquetadas con `[ADICIÓN]`.
+
+### Comandos de instalación y reinicio rápido
+
+```powershell
+# Reiniciar servicio Node.js
+PowerShell -Command "Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Process wscript.exe 'C:\uniOPOS_PuenteWeb\iniciar_puente.vbs'"
+```
