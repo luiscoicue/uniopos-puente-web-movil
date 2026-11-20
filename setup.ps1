@@ -133,7 +133,7 @@ while ($true) {
     Write-Host "  [0] Salir`n"
     $op = Read-Host " Opcion"
     switch ($op) {
-        "1" { Invoke-InstalacionCompleta; Read-Host "`nPresiona ENTER para volver al menu" }
+        "1" { try { Invoke-InstalacionCompleta } catch { Write-Host "`n[ERROR] $($_.Exception.Message)`nLinea: $($_.InvocationInfo.ScriptLineNumber)" -ForegroundColor Red }; Read-Host "`nPresiona ENTER para volver al menu" }
         "2" {
             try {
                 $res = Invoke-RestMethod -Uri "http://localhost:5000/api/mesas" -TimeoutSec 4
