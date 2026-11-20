@@ -6,4 +6,5 @@ if %errorlevel% neq 0 (
     exit /b
 )
 cd /d "%~dp0"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -Path '%~dp0setup.ps1' -EA 0; & '%~dp0setup.ps1'"
+if %errorlevel% neq 0 pause
