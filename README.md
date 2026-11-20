@@ -1,68 +1,74 @@
-# Guía de Instalación y Operación — uniOPOS PuenteWeb v2.0
+# Guía de Instalación y Despliegue — uniOPOS PuenteWeb v2.0
 
-**Empresa:** UNIOPOS S.A.S. (Puerto Carreño, Vichada, Colombia)  
-**Compatibilidad:** Windows 10 / Windows 11 (64-bit), uniCenta oPOS 5.0.1 y MariaDB (puerto `3316`).  
-**Requisitos previos:** Ninguno adicional (incluye Node.js v24 y JRE portables dentro de `bin\`).
-
----
-
-## 1. Instalación Automática (Recomendada para Clientes)
-
-1. Copie la carpeta `PuenteWeb_v2_FINAL` al equipo donde corre **uniCenta oPOS** (por ejemplo, en `C:\Temp\PuenteWeb_v2_FINAL`).
-2. Haga doble clic sobre **`instalar.bat`** y acepte el permiso de Administrador de Windows.
-3. Cuando el asistente lo solicite en el paso `[1/6]`:
-   - Ingrese la contraseña del usuario de MariaDB detectado (ej. `adminprospecta` o `prospecta2026#`).
-   - O escriba **`ROOT`** e ingrese la clave de `root` de MariaDB para que el instalador cree automáticamente el usuario dedicado `puente_app` sin alterar la configuración de uniCenta oPOS.
-4. Al finalizar el paso `[6/6]`, cierre y vuelva a abrir **uniCenta oPOS** para activar la recarga automática de mesas (`autoRefreshTableMap=true` cada 5 segundos) y la plantilla de recibo con **Mesero** y **Cajero**.
-
-### Instalación manual desde PowerShell (Administrador)
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force
-& "C:\Temp\PuenteWeb_v2_FINAL\setup.ps1"
-```
+**Desarrollado por:** Ing. Luis Coicue Rodríguez — UNIOPOS S.A.S. (Puerto Carreño, Vichada, Colombia)  
+**Compatibilidad:** Windows 10 / Windows 11 (x64) · uniCenta oPOS v5.0.1 · MariaDB 10.x / 11.x
 
 ---
 
-## 2. Arquitectura y Funcionalidades Incluidas (v2.0)
+## 1. Descripción General
 
-- **Servicio Web Portable (`C:\uniOPOS_PuenteWeb`):** Opera en el puerto TCP `5000` mediante `iniciar_puente.vbs` (en segundo plano y con inicio automático con Windows).
-- **Acceso Móvil por QR y Validación PIN:** Los meseros escanean el QR desde el navegador y se autentican con su PIN de uniCenta (validado por SHA-1 contra la tabla `people`).
-- **Productos Auxiliares Nativos (`ISCOM=1`):** Lee las relaciones de `products_com` y serializa cada modificador con `product.com="true"` en `TicketBridge.java`.
-- **Suma de Rondas en Mesa:** Permite agregar nuevos pedidos a mesas ya ocupadas conservando las líneas previas y generando un `UUID` único por ticket.
-- **Botones Operativos:**
-  - **Enviar (Azul):** Registra la orden en `sharedtickets` y la despacha al Monitor KDS (`comandas.html`) separada por estación (**Cocina P2** / **Barra P3**).
-  - **Caja (Verde):** Carga los productos directamente a la cuenta de la mesa sin emitir comanda al Monitor KDS.
-- **Trazabilidad en Factura (`Printer.Ticket`):** Guarda la propiedad `mesero_app` en `TicketLineInfo` para imprimir por separado **Mesero** (quien tomó la orden) y **Cajero** (quien cobró en caja).
+**uniOPOS PuenteWeb v2.0** conecta teléfonos móviles Android/iOS y tablets de cocina/bar en la red Wi-Fi local directamente con **uniCenta oPOS v5.0.1** y **MariaDB**, sin modificar el código fuente del punto de venta.
 
----
-
-## 3. URLs de Acceso en Red Local (Wi-Fi)
-
-- **Toma de Pedidos (Meseros / Celulares):** `http://<IP_DEL_SERVIDOR>:5000`
-- **Monitor de Cocina y Barra (KDS / Tablets):** `http://<IP_DEL_SERVIDOR>:5000/comandas.html`
-
-Para consultar la IP local del servidor en PowerShell:
-```powershell
-Get-NetIPAddress -AddressFamily IPv4 | Where-Object { \(_.InterfaceAlias -notmatch "Loopback\vert{}vEthernet\vert{}WSL" -and \)_.IPAddress -notlike "169.254.*" } | Select-Object InterfaceAlias, IPAddress
-```
+### Características principales incluidas en este paquete
+* **100 % Autónomo (Portable):** Incluye `bin\node.exe`, `bin\jre` y `node_modules` preinstalados; no requiere internet ni instalaciones globales previas en el equipo del cliente.
+* **Acceso Rápido para Meseros:** Escaneo de código **QR** desde el navegador del celular y autenticación mediante **teclado PIN** (validación SHA-1 contra la tabla `people` de uniCenta oPOS).
+* **Gestión Completa de Comandas:** Selección de mesas en tiempo real, productos por categoría, auxiliares nativos (`attributesetinstance`), adición de rondas sucesivas a mesas abiertas y vista de resumen de cuenta.
+* **Trazabilidad en Tirilla (`Printer.Ticket.xml`):** Inyección automática en MariaDB (vía `FROM_BASE64`) para imprimir por separado el **Mesero** que tomó el pedido y el **Cajero** que realizó el cobro.
+* **Monitor de Cocina y Bar:** Pantalla en tiempo real (`/comandas.html`) con alertas visuales de tiempo para tablets o pantallas en cocina.
 
 ---
 
-## 4. Comandos de Verificación y Mantenimiento
+## 2. Requisitos Previos en el Equipo del Cliente
 
-### Verificar estado del servicio y mesas cargadas
+1. **uniCenta oPOS v5.0.1** instalado y configurado contra su base de datos MariaDB (`unicentaopos.properties` existente en `%USERPROFILE%`).
+2. **Servicio MariaDB** activo y en ejecución (puerto habitual `3306` o `3316`).
+3. **Red Wi-Fi local** compartida entre el servidor POS (Windows) y los dispositivos móviles de los meseros.
+
+---
+
+## 3. Instalación Paso a Paso (Modo Automático Recomendado)
+
+1. **Copiar y extraer el paquete:**
+   * Copie el archivo **`uniOPOS_PuenteWeb_v2.0_Comercial.zip`** al Escritorio o a `C:\Temp` del servidor POS (evite ejecutarlo directamente desde carpetas de red o memorias USB).
+   * Haga **clic derecho -> Extraer todo...** sobre el archivo `.zip`.
+2. **Ejecutar el instalador como Administrador:**
+   * Abra la carpeta extraída y haga **clic derecho sobre `instalar.bat` -> Ejecutar como administrador**.
+3. **Ingresar credenciales de MariaDB:**
+   * El asistente detectará automáticamente el usuario, puerto y esquema desde `unicentaopos.properties`.
+   * Escriba la contraseña del usuario de MariaDB cuando el asistente la solicite y presione **ENTER**.
+4. **Finalizar:**
+   * Verifique que los **6 pasos (`[1/6]` a `[6/6]`)** finalicen en verde con el mensaje **`INSTALACION COMPLETADA CON EXITO (v2.0)`**.
+   * Presione **ENTER** para cerrar la ventana; el servicio quedará ejecutándose en segundo plano y con inicio automático junto con Windows.
+
+---
+
+## 4. Verificación Post-Instalación
+
+Para comprobar desde PowerShell en el servidor POS que el servicio web y la base de datos responden correctamente:
+
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:5000/api/mesas" | Select-Object ok, @{N='TotalMesas';E={\$_.places.Count}}
+Invoke-RestMethod "http://localhost:5000/api/mesas" | Select-Object ok, @{N='Mesas';E={\$_.places.Count}}
 ```
 
-### Reiniciar manualmente el servidor Puente Web
+* **Acceso Meseros (Celulares Wi-Fi):** `http://<IP-DEL-SERVIDOR>:5000`
+* **Monitor Cocina / Bar:** `http://<IP-DEL-SERVIDOR>:5000/comandas.html`
+* **Recarga automática en uniCenta oPOS:** Reinicie uniCenta oPOS tras la instalación para que aplique `till.autoRefreshTableMap=true` (actualización cada 5 segundos).
+
+---
+
+## 5. Comandos de Mantenimiento, Respaldo y Desinstalación
+
+### Reiniciar manualmente el servicio PuenteWeb
 ```powershell
-Get-CimInstance Win32_Process | Where-Object { \(_.CommandLine -match "uniOPOS_PuenteWeb\vert{}server\.js" } \vert{} ForEach-Object { Stop-Process -Id \)_.ProcessId -Force }
-Start-Sleep -Seconds 1
-Start-Process "wscript.exe" -ArgumentList "`"C:\uniOPOS_PuenteWeb\iniciar_puente.vbs`""
+Get-Process -Name node -EA 0 | Stop-Process -Force; Start-Process "wscript.exe" -ArgumentList "`"C:\uniOPOS_PuenteWeb\iniciar_puente.vbs`""
 ```
 
-### Recompilar `TicketBridge.java` (solo si se modifica el puente Java)
+### Respaldar configuración y plantilla de recibo
 ```powershell
-& "C:\uniOPOS_PuenteWeb\bin\jre\bin\javac.exe" -cp "C:\Program Files\unicenta-opos\app\unicentaopos.jar" "C:\uniOPOS_PuenteWeb\java-helper\TicketBridge.java"
+Copy-Item "C:\uniOPOS_PuenteWeb\config.json", "C:\uniOPOS_PuenteWeb\Printer.Ticket.xml" -Destination "C:\Backup_uniOPOS_PuenteWeb" -Force
+```
+
+### Desinstalación limpia (si se requiere reinstalar desde cero)
+```powershell
+Set-Location C:\; Get-Process -Name node, java, javaw, wscript -EA 0 | Stop-Process -Force; Start-Sleep 1; Remove-Item "C:\uniOPOS_PuenteWeb", "\(env:USERPROFILE\Desktop\uniOPOS*", "\)([Environment]::GetFolderPath('Startup'))\uniOPOS Puente Web.lnk" -Recurse -Force -EA 0; Remove-NetFirewallRule -DisplayName "uniOPOS PuenteWeb 5000", "uniOPOS Puente Web 5000" -EA 0
 ```
