@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 $srcDir   = $PSScriptRoot
 $destDir  = "C:\uniOPOS_PuenteWeb"
 $propFile = Join-Path $env:USERPROFILE "unicentaopos.properties"
@@ -41,7 +41,7 @@ function Invoke-Diagnostico {
     Write-Host (" Usuario uniCenta   : {0}" -f $e.DbUser) -ForegroundColor White
     Write-Host (" Archivo JAR        : " + $(if (Test-Path $e.JarPath) { "OK ($($e.JarPath))" } else { "NO ENCONTRADO" })) -ForegroundColor $(if (Test-Path $e.JarPath) { "Green" } else { "Yellow" })
     Write-Host (" IP Local Wi-Fi     : {0}" -f $e.LocalIP) -ForegroundColor Yellow
-    Write-Host (" Puerto 5000 Puente : " + $(if ($e.PuenteActivo) { "ACTIVO Y ESCUCHANDO" } else { "DETENIDO" })) -ForegroundColor $(if ($e.PuenteActivo) { "Green" } else { "Yellow" })
+    $isAdm = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator); Write-Host (" Permisos Admin     : " + $(if ($isAdm) { "SI (Administrador)" } else { "NO (Abrir con instalar.bat)" })) -ForegroundColor $(if ($isAdm) { "Green" } else { "Red" }); Write-Host (" Puerto 5000 Puente : " + $(if ($e.PuenteActivo) { "ACTIVO Y ESCUCHANDO" } else { "DETENIDO" })) -ForegroundColor $(if ($e.PuenteActivo) { "Green" } else { "Yellow" })
     Write-Host "============================================================`n" -ForegroundColor Cyan
 }
 
@@ -160,6 +160,6 @@ while ($true) {
             Remove-Item "$([Environment]::GetFolderPath('Startup'))\uniOPOS Puente Web.lnk" -EA 0
             Write-Host "`nServicio detenido y autoarranque eliminado." -ForegroundColor Yellow; Read-Host "Presiona ENTER para continuar"
         }
-        "0" { exit }
+        "0" { break }
     }
 }
