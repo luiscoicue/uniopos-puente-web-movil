@@ -163,24 +163,3 @@ while ($true) {
         "0" { exit }
     }
 }
-        "3" {
-            Get-CimInstance Win32_Process -EA 0 | Where-Object { $_.CommandLine -match "uniOPOS_PuenteWeb|iniciar_puente|server\.js" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -EA 0 }
-            Start-Sleep -Seconds 1
-            if (Test-Path "$destDir\iniciar_puente.vbs") { Start-Process "wscript.exe" -ArgumentList "`"$destDir\iniciar_puente.vbs`"" }
-            Write-Host "`nServicio reiniciado." -ForegroundColor Green; Start-Sleep -Seconds 2
-        }
-        "4" {
-            $bk = "C:\uniOPOS_Backups\Backup_$(Get-Date -Format 'yyyyMMdd_HHmm')"
-            New-Item -ItemType Directory -Force -Path $bk | Out-Null
-            Copy-Item "$destDir\config.json","$destDir\Printer.Ticket*.xml",$propFile -Destination $bk -EA 0
-            Write-Host "`nRespaldo guardado en: $bk" -ForegroundColor Green; Read-Host "Presiona ENTER para continuar"
-        }
-        "5" {
-            Get-CimInstance Win32_Process -EA 0 | Where-Object { $_.CommandLine -match "uniOPOS_PuenteWeb|iniciar_puente|server\.js" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -EA 0 }
-            Remove-NetFirewallRule -DisplayName "uniOPOS Puente Web 5000","uniOPOS PuenteWeb 5000" -EA 0
-            Remove-Item "$([Environment]::GetFolderPath('Startup'))\uniOPOS Puente Web.lnk" -EA 0
-            Write-Host "`nServicio detenido y autoarranque eliminado." -ForegroundColor Yellow; Read-Host "Presiona ENTER para continuar"
-        }
-        "0" { exit }
-    }
-}
