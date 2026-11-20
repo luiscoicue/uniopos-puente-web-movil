@@ -1,0 +1,1 @@
+{"port":5000,"dbHost":"localhost","dbPort":3316,"dbUser":"puente_app","dbPassword":"CAMBIAR_PASSWORD","dbName":"uniopos","unicentaJarPath":"C:\\Program Files\\unicenta-opos\\app\\unicentaopos.jar","javaPath":"bin\\jre\\bin\\java.exe"}
