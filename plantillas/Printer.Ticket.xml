@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Recibo de venta - UNIOPOS SAS. Basado en uniCenta oPOS (GPLv3) -->
+<output>
+
+    <display>
+        <line><text align="left" length="8">Total</text><text align="right" length="12">${ticket.printTotal()}</text></line>
+        <line><text align="center" length="20">Gracias por su compra</text></line>
+    </display>
+
+    <ticket>
+#set($esCredito = false)
+#foreach ($p in $ticket.payments)
+#i�($p .name == "debt")#set($esCredito = true)#end
+#end
+        <image>Printer.Ticket.Logo</image>
+        <line></line>
+        #if (${ticket.printTicketHeaderLine1()} != "")
+        <line><text align="center" length="42">${ticket.printTicketHeaderLine1()}</text></line>
+        #end
+        #if (${ticket.printTicketHeaderLine2()} != "")
+        <line><text align="center" length="42">${ticket.printTicketHeaderLine2()}</text></line>
+        #end
+        #if (${ticket.printTicketHeaderLine3()} != "")
+        <line><text align="center" length="42">${ticket.printTicketHeaderLine3()}</text></line>
+        #end
+        #if (${ticket.printTicketHeaderLine4()} != "")
+        <line><text align="center" length="42">${ticket.printTicketHeaderLine4()}</text></line>
+        #end
+        #if (${ticket.printTicketHeaderLine5()} != "")
+        <line><text align="center" length="42">${ticket.printTicketHeaderLine5()}</text></line>
+        #end
+        #if (${ticket.printTicketHeaderLine6()} != "")
+        <line><text align="center" length="42">${ticket.printTicketHeaderLine6()}</text></line>
+        #end
+        <line></line>
+
+        #if (${ticket.ticketType} == 1)
+        <line size="1"><text align="center" length="42" bold="true">DEVOLUCION</text></line>
+        #else
+        <line size="1"><text align="center" length="42" bold="true">FACTURA DE VENTA</text></line>
+        #end
+        <line></line>
+        <line><text align="left" length="14">Numero:</text><text>${ticket.printId()}</text></line>
+        <line><text align="left" length="14">Fecha:</text><text>${ticket.printDate()}</text></line>
+#set($meseroApp = "")
+#foreach ($tl in $ticket.getLines())
+#if ("$!${tl.getProperty('mesero_app')}" != "")#set($meseroApp = $tl.getProperty('mesero_app'))#end
+#end
+        #if ($meseroApp != "")
+        <line><text align="left" length="14">Mesero:</text><text>${meseroApp</text></line>
+        <line><text align="left" length="14">Cajero:</text><text>${ticket.printUser()}</text></line>
+        #else
+        <line><text align="left" length="14">Atendido por:</text><text>${ticket.printUser()}</text></line>
+        #end
+        #if (${tickettext.place} != ${place})
+        <line><text align="left" length="14">Mesa:</text><text>${place}</text></line>
+        #end
+        #if ($ticket.getCustomer())
+        <line><text align="left" length="14">Cliente:</text><text>${ticket.getCustomer().printName()}</text></line>
+        #if ("$!${ticket.getCustomer().getTaxid()}" != "")
+        <line><text align="left" length="14">CC/NIT:</text><text>${ticket.getCustomer().getTaxid()}</text></line>
+        #end
+        #end
+        <line></line>
+    </ticket>
+</output>

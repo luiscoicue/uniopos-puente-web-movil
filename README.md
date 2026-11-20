@@ -32,3 +32,7 @@ Start-Process -FilePath "C:\uniOPOS_PuenteWeb\bin\node\node.exe" -ArgumentList "
 # Reiniciar servicio Node.js
 PowerShell -Command "Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Process wscript.exe 'C:\uniOPOS_PuenteWeb\iniciar_puente.vbs'"
 ```
+
+## Actualización v2.0.2 - Trazabilidad Mesero y Cajero en Factura
+- **Propiedad mesero_app en TicketLineInfo:** Guardada en cada línea desde TicketBridge.java y server.js.
+- **Plantilla Printer.Ticket:** Imprime Mesero y Cajero por separado al cobrar desde uniCenta oPOS (plantilla incluida en plantillas/Printer.Ticket.xml).
