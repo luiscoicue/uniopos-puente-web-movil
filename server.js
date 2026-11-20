@@ -135,7 +135,7 @@ app.post('/api/pedido', async (req, res) => {
             return [it.id, cleanName, it.qty, it.price, tax.id, tax.name, tax.category, tax.rate, tax.rateorder, cleanNotes, dbProd.REFERENCE || it.id, dbProd.CODE || it.id, dbProd.CATEGORY || '000', isComFlag, ((dbProd.ATTR_XML || '').match(/key="product\.printer">(\d+)/i)?.[1] || '')].join('|');
         }).join(';;');
 
-        const [ticketId, newBase64] = runJavaBridge(['WRITE', currentBase64, serializedLines, PLANTILLA_PATH]).split('::');
+        const [ticketId, newBase64] = runJavaBridge(['WRITE', currentBase64, serializedLines, PLANTILLA_PATH, waiterName || '']).split('::');
         const newBuffer = Buffer.from(newBase64, 'base64');
         const now = new Date();
         const timeTag = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');

@@ -101,7 +101,7 @@ public class TicketBridge {
                 String targetPrinter = ("2".equals(dbPrinter) || "3".equals(dbPrinter)) ? dbPrinter : (isBar ? "3" : "2");
                 props.setProperty("product.printer", targetPrinter);
                 props.setProperty("ticket.updated", "true");
-                props.setProperty("sendstatus", "No");
+                props.setProperty("sendstatus", "No"); if (args.size() > 4 && !args.get(4).trim().isEmpty()) { props.setProperty("mesero_app", args.get(4).trim()); }
                 if (p.length > 9 && !p[9].isEmpty()) { props.setProperty("notes", p[9]); props.setProperty("product.attsetdesc", p[9]); }
                 ticket.addLine(new TicketLineInfo(p[0], Double.parseDouble(p[2]), Double.parseDouble(p[3]), tax, props));
             }
@@ -110,7 +110,7 @@ public class TicketBridge {
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(ticket);
             oos.flush(); oos.close();
-            System.out.println(ticket.getId() + "::" + Base64.getEncoder().encodeToString(baos.toByteArray()));
+            if (args.size() > 4 && !args.get(4).trim().isEmpty()) { ticket.setProperty("mesero_app", args.get(4).trim()); } System.out.println(ticket.getId() + "::" + Base64.getEncoder().encodeToString(baos.toByteArray()));
         }
     }
 }
