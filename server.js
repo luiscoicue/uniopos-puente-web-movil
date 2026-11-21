@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 const { execFileSync } = require('child_process');
@@ -23,7 +23,7 @@ const pool = mysql.createPool({
     connectionLimit: 10
 });
 
-const UNICENTA_JAR = config.unicentaJarPath || 'C:\\Program Files\\unicenta-opos\\app\\unicentaopos.jar';
+const UNICENTA_JAR = config.unicentaJarPath || 'C:\\uniOPOS\\unicentaopos.jar';
 const HELPER_DIR = path.join(__dirname, 'java-helper');
 const PLANTILLA_PATH = path.join(HELPER_DIR, 'plantilla.b64');
 const CLASSPATH = `${UNICENTA_JAR};${HELPER_DIR}`;
@@ -213,4 +213,5 @@ app.post('/api/auth', async (req, res) => {
 });
 const PORT = Number(config.port) || 5000;
 app.listen(PORT, '0.0.0.0', () => console.log(`PUENTE WEB v2.0 ACTIVO -> Puerto ${PORT}`));
+
 

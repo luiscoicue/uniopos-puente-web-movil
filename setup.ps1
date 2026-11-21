@@ -10,7 +10,7 @@ Write-Host "====================================================`n" -ForegroundC
 # 1. Detectar configuracion de uniCenta oPOS y MariaDB
 Write-Host "[1/6] Detectando entorno de uniCenta oPOS y MariaDB..." -ForegroundColor Cyan
 $dbHost = "localhost"; $dbPort = 3316; $dbUser = "unicenta"; $dbName = "masterpos_dev"
-$jarPath = "C:\Program Files\unicenta-opos\app\unicentaopos.jar"
+$jarPath = "C:\uniOPOS\unicentaopos.jar"
 
 if (Test-Path $propFile) {
     $props = Get-Content $propFile
@@ -28,8 +28,8 @@ if (Test-Path $propFile) {
 }
 
 Write-Host "  Base de datos detectada : $dbName ($dbHost`:$dbPort) | Usuario: $dbUser" -ForegroundColor Gray
-$inputPass = Read-Host "  Contrasena de MariaDB para '$dbUser' [Enter para usar 'prospecta2026#']"
-$dbPass = if ([string]::IsNullOrWhiteSpace($inputPass)) { "prospecta2026#" } else { $inputPass.Trim() }
+$inputPass = Read-Host "  Contrasena de MariaDB para '$dbUser' [Enter para usar 'uniopos20262']"
+$dbPass = if ([string]::IsNullOrWhiteSpace($inputPass)) { "uniopos20262" } else { $inputPass.Trim() }
 
 # 2. Activar actualizacion automatica de mesas en unicentaopos.properties
 Write-Host "`n[2/6] Activando recarga automatica de mesas en uniCenta oPOS..." -ForegroundColor Cyan
@@ -105,3 +105,5 @@ Write-Host "Monitor de Cocina/Bar:" -ForegroundColor White
 Write-Host "   http://${localIP}:5000/comandas.html" -ForegroundColor Yellow
 Write-Host "====================================================`n" -ForegroundColor Green
 Read-Host "Presiona ENTER para finalizar"
+
+
